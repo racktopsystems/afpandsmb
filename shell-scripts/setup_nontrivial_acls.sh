@@ -22,28 +22,30 @@
 # THE SOFTWARE.
 #
 ###############################################################################
-## Description: 
+## Description:
 ###############################################################################
 ## Script is used to set proper non-trivial ACLs on ZFS datasets and files/dirs.
-## The idea behind this script is to allow for a more simplified share 
+## The idea behind this script is to allow for a more simplified share
 ## administration, without having to manage the share via a Windows system.
 ## Script was mainly created to support proper configuration of shares used for
 ## AFP and CIFS together.
-## The script assumes that directory mapping is working correctly and that we 
-## are able to do lookups of groups in the directory. At the moment there is no 
-## assumption that ldap works correctly, but we must be able to perform 
+## The script assumes that directory mapping is working correctly and that we
+## are able to do lookups of groups in the directory. At the moment there is no
+## assumption that ldap works correctly, but we must be able to perform
 ## `getent group <groupname>` and get a meaningful answer. This answer is then
 ## parsed and group ID is extracted. Various chmod, chown, etc. commands are
 ## assuming existing group ID.
 ###############################################################################
 ## Usage:
 ###############################################################################
-## To use this script, simply pass name of group as first argument and 
+## To use this script, simply pass name of group as first argument and
 ## and the filesystem path, starting at the root, which at the moment is
 ## typically `/volumes`.
 ## Resulting command should look very similar to the following:
 ## ./setup_nontrivial_acls.sh "superAdminADGroup" /volumes/datapool/ds01
 ###############################################################################
+
+# FIXME: Need to make sure .zfs visible is set back to hidden if visible.
 
 created=06/25/20013
 updated=
@@ -126,7 +128,7 @@ function set_zfs_acl_handling_props () {
 	[[ $? -ne 0 ]] && local retcode=1
 
 	[[ ${debug} -gt 1 ]] && set +x
-	return ${retcode}	
+	return ${retcode}
 }
 
 function get_numeric_id_from_group_name () {
@@ -166,7 +168,7 @@ function set_group_owner_acls () {
 	[[ ${debug} -gt 1 ]] && set -x
 	local retcode=0
 	print_debug ">> set_group_owner_acls <<"
-	
+
 	local groupid=$1
 	${CHGRP_CMD} -R ${groupid} "${filepath}" || local retcode=1
 
@@ -202,4 +204,3 @@ set_domain_admin_acls && print_info "Successfully set Domain Admins ACLs on data
 printf "%s\n" "---- Begin Results ----"
 ${LS_CMD} -ldaV "${filepath}"
 printf "%s\n" "---- Begin Results ----"
-
