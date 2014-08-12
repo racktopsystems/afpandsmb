@@ -114,7 +114,7 @@ function check_snapdir_visible () {
 
 		# Determine if snapdir is visible or hidden, store visibility property in
 		# prop variable.
-		read dir prop _ < <(${ZFS_CMD} get -H snapdir ${ds})
+		read dir _ prop _ < <(${ZFS_CMD} get -H snapdir ${ds})
 
 		# Return 0 if visible, 1 otherwise. Should only ever be visible or hidden.
 		[[ "${prop}" == "visible" ]] && return 0 || return 1
