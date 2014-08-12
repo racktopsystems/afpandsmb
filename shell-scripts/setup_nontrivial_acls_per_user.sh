@@ -48,8 +48,8 @@
 
 name=setup_nontrivial_acls_per_user.sh
 created=06/25/2013
-updated=07/25/2013
-version=0.0.1 ## Bump incremental version number on every change.
+updated=08/12/2014
+version=0.0.2 ## Bump incremental version number on every change.
 debug=0
 
 ## Commands used throughout the script. We do not set a path here.
@@ -67,6 +67,9 @@ filepath=${args[2]}
 default_admin_group="Domain Admins" ## Default Domain Administrators
 groupid=
 userid=
+
+#get original value of snapdir setting to be used twice
+checksnapdir=`zfs get -p snapdir | grep "${filepath}" | awk {'print $3'}`
 
 ## Declare functions used in the main portion of the script ##
 
@@ -110,6 +113,15 @@ function check_number_of_args () {
 	fi
 
 }
+
+function check_snapdir_visible () {
+        if [ ${checksnapdir} == "visible" ]
+                then
+                		echo "Hiding snapshot directories for the duration of this script"
+                        zfs set snapdir=hidden "${filepath}"
+        fi
+}
+
 
 
 function set_zfs_acl_handling_props () {
@@ -217,6 +229,8 @@ check_number_of_args || { print_error "Cannot continue, fewer or greater than ex
 
 get_numeric_id_from_group_name || { print_error "Cannot continue, check group name (# getent group)." && usage; }
 
+check_snapdir_visible
+
 set_zfs_acl_handling_props && print_info "Successfully changed ZFS aclmode and aclinherit to passthrough." \
 || print_error "Unable to change ZFS metadata. "
 
@@ -228,6 +242,9 @@ set_group_owner_acls "${groupid}" && print_info "Successfully set ${groupname} A
 
 set_domain_admin_acls && print_info "Successfully set Domain Admins ACLs on dataset." \
 || print_error "Failed to set Domain Admins ACLs on dataset."
+
+## set snapdir value back to its original value
+zfs set snapdir="${checksnapdir}" "${filepath}"
 
 
 printf "%s\n" "---- Begin Results ----"
