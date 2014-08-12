@@ -56,15 +56,14 @@ CHGRP_CMD=/usr/sun/bin/chgrp
 CHMOD_CMD=/usr/sun/bin/chmod
 LS_CMD=/usr/sun/bin/ls
 GETENT_CMD=/usr/bin/getent
+ZFS_CMD=/usr/sbin/zfs
 
 args=("$@") ## Args we collect from the command line.
 groupname=${args[0]}
 filepath=${args[1]}
 default_admin_group="Domain Admins" ## Default Domain Administrators
 groupid=
-
-#get original value of snapdir setting to be used twice
-checksnapdir=`zfs get -p snapdir | grep "${filepath}" | awk {'print $3'}`
+snapdir_is_visible=false
 
 ## Declare functions used in the main portion of the script ##
 
@@ -110,13 +109,39 @@ function check_number_of_args () {
 }
 
 function check_snapdir_visible () {
-        if [ ${checksnapdir} == "visible" ]
-                then
-                		echo "Hiding snapshot directories for the duration of this script"
-                        zfs set snapdir=hidden "${filepath}"
-        fi
+		local ds=$1 # Function should get a correctly formatted ZFS dataset string.
+		[[ -z $ds ]] && return 1
+
+		# Determine if snapdir is visible or hidden, store visibility property in
+		# prop variable.
+		read dir prop _ < <(${ZFS_CMD} get -H snapdir ${ds})
+
+		# Return 0 if visible, 1 otherwise. Should only ever be visible or hidden.
+		[[ "${prop}" == "visible" ]] && return 0 || return 1
+
 }
 
+function set_snapdir_hidden () {
+
+	# If visible, snapdir should be hidden.
+  local zfs_ds=${p//\/volumes\/}  # This is an ugly assumption.
+
+  if check_snapdir_visible ${zfs_ds}; then
+      print_info "Hiding snapshot directories for the duration of this script"
+      ${ZFS_CMD} set snapdir=hidden ${zfs_ds}
+			snapdir_is_visible=true # Set snapdir visible flag, so we know to change it later.
+	fi
+
+return
+
+}
+
+function set_snapdir_visible () {
+
+	# Check flag here and so other stuff to get back to original state.
+	# For Aaron to fill-in...
+	return
+}
 
 function set_zfs_acl_handling_props () {
 
